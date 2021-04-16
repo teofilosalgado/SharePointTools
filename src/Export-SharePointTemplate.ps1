@@ -42,6 +42,7 @@ foreach ($PageItem in $PageList) {
     }
     catch {
         Write-Error "Erro ao exportar página: $($Name)!";
+        break;
     }
 
     $Time = Get-Date -Format "o";

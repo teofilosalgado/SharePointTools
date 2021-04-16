@@ -76,7 +76,8 @@ foreach ($Template in $Templates) {
         Invoke-Template -Name $Name -Total $Total -TemplatePath $TemplatePath -Index $Index -ErrorAction Stop;
     }
     catch {
-        Write-Error "Fim da execu��o. Encerrada no item $($Name), na posi��o $($Index).";
+        Write-Error "Fim da execução. Encerrada no item $($Name), na posição $($Index).";
+        break;
     }
     $Index = $Index + 1;
 }
