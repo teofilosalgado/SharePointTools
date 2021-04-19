@@ -5,14 +5,15 @@ function Export-SharePointTemplate {
     .SYNOPSIS
         Export SharePoint site template.
     .DESCRIPTION
-        This script export every single page in a SharePoint site to a Result folder 
-        containing the templates organized by Guid.
+        This script export every single page in a SharePoint site to the 
+        $OutputPath folder which, by the end of the execution, will contain all
+        the templates organized by Guid and a Log.csv index file.
     .EXAMPLE
         Export-SharePointTemplate -SourceUrl "mytenant.sharepoint.com" -OutputPath ".\Result"
     .PARAMETER SourceUrl
-        Specify the Url of the SharePoint site.
+        Specify the Url of the source SharePoint site.
     .PARAMETER OutputPath
-        Specify the location to store the templates.
+        Specify the location to store the templates and index file.
     .LINK
         https://github.com/teofilosalgado/SharePointTools
     #>
@@ -28,26 +29,27 @@ function Export-SharePointTemplate {
     )
     
     begin {
-        Write-Verbose "[Export-SharePointTemplate] Start!"
-        Write-Verbose "[Export-SharePointTemplate] Connecting to $($SourceUrl)"
+        Write-Verbose "[Export-SharePointTemplate] Start!";
+        Write-Verbose "[Export-SharePointTemplate] Connecting to $($SourceUrl)";
         Connect-PnPOnline -Url $SourceUrl -UseWebLogin -WarningAction Ignore;
         
-        Write-Verbose "[Export-SharePointTemplate] Creating $($OutputPath) folder"
+        Write-Verbose "[Export-SharePointTemplate] Creating $($OutputPath) folder";
         if (-not (Test-Path $OutputPath)) {
             New-Item $OutputPath -ItemType Directory | Out-Null;   
         }
         $ResultPath = Resolve-Path $OutputPath;
+
+        Write-Verbose "[Export-SharePointTemplate] Querying $($SourceUrl) pages";
+        $PageList = Get-PnPListItem -List "SitePages";
+        $Records = [List[PSCustomObject]]::new();
     }
     
     process {
-        $PageList = Get-PnPListItem -List "SitePages";
-        $Records = [List[PSCustomObject]]::new();
-
-        $Index = 0;
+        $CurrentTemplateIndex = 0;
         foreach ($PageItem in $PageList) {
-            $Name = $PageItem.FieldValues["FileLeafRef"];
-            $Guid = $PageItem.FieldValues["GUID"];
-            $TemplateFolderPath = Join-Path -Path $ResultPath -ChildPath $Guid;
+            $PageName = $PageItem.FieldValues["FileLeafRef"];
+            $PageGuid = $PageItem.FieldValues["GUID"];
+            $TemplateFolderPath = Join-Path -Path $ResultPath -ChildPath $PageGuid;
             $TemplateFilePath = Join-Path -Path $TemplateFolderPath -ChildPath "Template.xml";
             
             if (-not (Test-Path $TemplateFolderPath)) {
@@ -55,13 +57,13 @@ function Export-SharePointTemplate {
             }
 
             Write-Progress `
-                -Activity "Exporting $($Name).." `
-                -Status "$($Index) of $($PageList.Count) pages" `
-                -PercentComplete (($Index / $PageList.Count) * 100);
+                -Activity "Exporting $($PageName)" `
+                -Status "$($CurrentTemplateIndex) of $($PageList.Count) pages" `
+                -PercentComplete (($CurrentTemplateIndex / $PageList.Count) * 100);
 
             try {
                 Export-PnPClientSidePage `
-                    -Identity $Name `
+                    -Identity $PageName `
                     -Out $TemplateFilePath `
                     -PersistBrandingFiles `
                     -ErrorAction Stop `
@@ -69,16 +71,16 @@ function Export-SharePointTemplate {
                 
                 $Time = Get-Date -Format "o";
                 $Record = [PSCustomObject]@{
-                    Guid = $Guid
-                    Name = $Name
+                    Guid = $PageGuid
+                    Name = $PageName
                     Path = $TemplateFilePath
                     Time = $Time
-                }
+                };
                 $Records.Add($Record);
-                $Index = $Index + 1;
+                $CurrentTemplateIndex = $CurrentTemplateIndex + 1;
             }
             catch {
-                Write-Error "Error exporting page: $($Name)!";
+                Write-Error "[Export-SharePointTemplate] Error exporting page $($PageName)!";
             }
         }
     }
@@ -87,6 +89,6 @@ function Export-SharePointTemplate {
         $LogPath = Join-Path -Path $ResultPath -ChildPath "Log.csv";
         Write-Verbose "[Export-SharePointTemplate] Saving report to $($LogPath)"
         $Records | Export-Csv -Path $LogPath -Force;
-        Write-Verbose "[Export-SharePointTemplate] Done!"
+        Write-Verbose "[Export-SharePointTemplate] Done!";
     }
 }

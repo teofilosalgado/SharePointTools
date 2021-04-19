@@ -1,31 +1,101 @@
-using module ".\Item.psm1";
-
-[CmdletBinding()]
-param (
-    # URL of the destination site.
-    [Parameter(Mandatory)]
-    [string]
-    $DestinationUrl,
-
-    # Convert to team site
-    [Parameter(Mandatory = $false)]
-    [switch]
-    $ConvertToTeamSite = $false
-)
-
-function Invoke-Template {
+function Import-SharePointTemplate {
+    <#
+    .SYNOPSIS
+        Import SharePoint site template.
+    .DESCRIPTION
+        This script import every template stored in the $OutputPath folder
+        to the desired SharePoint site at $DestinationUrl. Optionally, if the
+        destination site is a Team Site and the origin site was an Organization
+        Site you may use the ConvertToTeamSite flag to prevent errror.s
+    .EXAMPLE
+        Import-SharePointTemplate -DestinationUrl "mytenant.sharepoint.com" -InputPath ".\Result" -ConvertToTeamSite
+    .PARAMETER DestinationUrl
+        Specify the Url of the destination SharePoint site.
+    .PARAMETER OutputPath
+        Specify the location where the templates are stored.
+    .PARAMETER ConvertToTeamSite
+        Convert the template to fit a Team Site if the origin site was an
+        Organization site.
+    .LINK
+        https://github.com/teofilosalgado/SharePointTools
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
         [string]
-        $Name,
+        $DestinationUrl,
 
         [Parameter(Mandatory)]
-        [int]
-        $Total,
+        [string]
+        $InputPath,
+
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $ConvertToTeamSite = $false
+    )
+    
+    begin {
+        Write-Verbose "[Import-SharePointTemplate] Start!";
+        Write-Verbose "[Import-SharePointTemplate] Connecting to $($DestinationUrl)";
+        Connect-PnPOnline -Url $DestinationUrl -UseWebLogin;
+        
+        $CsvLocation = Join-Path -Path $InputPath -ChildPath "Log.csv";
+        Write-Verbose "[Import-SharePointTemplate] Reading report at $($CsvLocation)";
+        $Templates = Import-Csv -Path $CsvLocation;
+        $Total = $Templates.Count;
+    }
+    
+    process {
+        $CurrentTemplateIndex = 0;
+        foreach ($Template in $Templates) {
+            $PageName = $Template.Name;
+            $TemplatePath = $Template.Path;
+    
+            if ($ConvertToTeamSite) {
+                $FolderPath = Split-Path -Path $TemplatePath
+                $AltTemplatePath = Join-Path -Path $FolderPath -ChildPath "AltTemplate.xml";
+                Copy-Item $TemplatePath -Destination $AltTemplatePath;
+                (Get-Content $AltTemplatePath).replace('OneColumnFullWidth', 'OneColumn') | Set-Content $AltTemplatePath;
+                $TemplatePath = $AltTemplatePath;
+            }
+            try {
+                Invoke-ApplySharePointTemplate `
+                    -DestinationUrl $DestinationUrl `
+                    -PageName $PageName `
+                    -TemplatePath $TemplatePath `
+                    -Total $Total `
+                    -Index $CurrentTemplateIndex `
+                    -ErrorAction Stop;
+            }
+            catch {
+                Write-Error "[Import-SharePointTemplate] Error importing page $($PageName)!";
+            }
+            $CurrentTemplateIndex = $CurrentTemplateIndex + 1;
+        }
+    }
+    
+    end {
+        Write-Verbose "[Import-SharePointTemplate] Done!";
+    }
+}
+
+function Invoke-ApplySharePointTemplate {
+    param (
+        [Parameter(Mandatory)]
+        [string]
+        $DestinationUrl,
+        
+        [Parameter(Mandatory)]
+        [string]
+        $PageName,
 
         [Parameter(Mandatory)]
         [string]
         $TemplatePath,
+
+        [Parameter(Mandatory)]
+        [int]
+        $Total,
 
         [Parameter(Mandatory)]
         [int]
@@ -37,47 +107,16 @@ function Invoke-Template {
         $Count = $Count + 1;
         try {
             Write-Progress `
-                -Activity "Importando $($Name). Tentativa $($Count) de 3" `
-                -Status "$($Index) de $($Total) páginas" `
+                -Activity "Importing $($PageName). Attempt $($Count) of 3" `
+                -Status "$($Index) of $($Total) pages" `
                 -PercentComplete (($Index / $Total) * 100);
             Apply-PnPProvisioningTemplate -Path $TemplatePath -ClearNavigation;
             return;
         }
         catch {
-            Connect-PnPOnline -Url "https://spo-global.kpmg.com/sites/BR-SMSASAPMovement" -UseWebLogin;
+            Connect-PnPOnline -Url $DestinationUrl -UseWebLogin;
             Start-Sleep -Seconds 30;
         }
     } while ($Count -lt 3)
-
-    $Failure = "Falha na importação da página $($Name).";
-    throw $Failure;
-}
-
-
-Connect-PnPOnline -Url $DestinationUrl -UseWebLogin;
-
-$Index = 0;
-$Templates = Import-Csv -Path ".\Result\Log.csv";
-$Total = $Templates.Count;
-
-foreach ($Template in $Templates) {
-    $Name = $Template.Name;
-    $TemplatePath = $Template.Path;
-    
-    if ($ConvertToTeamSite) {
-        $FolderPath = Split-Path -Path $TemplatePath
-        $AltTemplatePath = Join-Path -Path $FolderPath -ChildPath "AltTemplate.xml";
-        Copy-Item $TemplatePath -Destination $AltTemplatePath;
-        (Get-Content $AltTemplatePath).replace('OneColumnFullWidth', 'OneColumn') | Set-Content $AltTemplatePath;
-        $TemplatePath = $AltTemplatePath;
-    }
-    
-    try {
-        Invoke-Template -Name $Name -Total $Total -TemplatePath $TemplatePath -Index $Index -ErrorAction Stop;
-    }
-    catch {
-        Write-Error "Fim da execução. Encerrada no item $($Name), na posição $($Index).";
-        break;
-    }
-    $Index = $Index + 1;
+    throw Get-PnPException;
 }
