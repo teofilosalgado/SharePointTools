@@ -8,7 +8,7 @@ function Import-SharePointTemplate {
         destination site is a Team Site and the origin site was an Organization
         Site you may use the ConvertToTeamSite flag to prevent errror.s
     .EXAMPLE
-        Import-SharePointTemplate -DestinationUrl "mytenant.sharepoint.com" -InputPath ".\Result" -ConvertToTeamSite
+        PS C:\> Import-SharePointTemplate -DestinationUrl "mytenant.sharepoint.com" -InputPath ".\Result" -ConvertToTeamSite
     .PARAMETER DestinationUrl
         Specify the Url of the destination SharePoint site.
     .PARAMETER OutputPath
@@ -37,7 +37,7 @@ function Import-SharePointTemplate {
     begin {
         Write-Verbose "[Import-SharePointTemplate] Start!";
         Write-Verbose "[Import-SharePointTemplate] Connecting to $($DestinationUrl)";
-        Connect-PnPOnline -Url $DestinationUrl -UseWebLogin;
+        Connect-PnPOnline -Url $DestinationUrl -UseWebLogin -WarningAction Ignore;
         
         $CsvLocation = Join-Path -Path $InputPath -ChildPath "Log.csv";
         Write-Verbose "[Import-SharePointTemplate] Reading report at $($CsvLocation)";

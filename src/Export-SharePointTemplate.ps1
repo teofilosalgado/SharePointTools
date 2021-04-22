@@ -9,7 +9,7 @@ function Export-SharePointTemplate {
         $OutputPath folder which, by the end of the execution, will contain all
         the templates organized by Guid and a Log.csv index file.
     .EXAMPLE
-        Export-SharePointTemplate -SourceUrl "mytenant.sharepoint.com" -OutputPath ".\Result"
+        PS C:\> Export-SharePointTemplate -SourceUrl "mytenant.sharepoint.com" -OutputPath ".\Result"
     .PARAMETER SourceUrl
         Specify the Url of the source SharePoint site.
     .PARAMETER OutputPath
