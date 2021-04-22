@@ -91,9 +91,10 @@ function Export-SharePointTemplate {
         $CustomizationTemplateFilePath = Join-Path -Path $CustomizationTemplateFolderPath -ChildPath "Customization.xml";
 
         Get-PnPProvisioningTemplate `
-            -Handlers Navigation, SiteHeader, SiteFooter `
+            -Handlers Navigation `
             -Out $CustomizationTemplateFilePath `
             -Force;
+            
         $Time = Get-Date -Format "o";
         $Record = [PSCustomObject]@{
             Guid = "Customization"
