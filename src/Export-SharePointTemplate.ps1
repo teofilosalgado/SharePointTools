@@ -92,7 +92,8 @@ function Export-SharePointTemplate {
 
         Get-PnPProvisioningTemplate `
             -Handlers Navigation, SiteHeader, SiteFooter `
-            -Out $CustomizationTemplateFilePath;
+            -Out $CustomizationTemplateFilePath `
+            -Force;
         $Time = Get-Date -Format "o";
         $Record = [PSCustomObject]@{
             Guid = "Customization"
