@@ -83,6 +83,28 @@ function Export-SharePointTemplate {
                 Write-Error "[Export-SharePointTemplate] Error exporting page $($PageName)!";
             }
         }
+        Write-Progress `
+            -Activity "Exporting customization" `
+            -PercentComplete 0;
+
+        $CustomizationTemplateFolderPath = Join-Path -Path $ResultPath -ChildPath "Customization";
+        $CustomizationTemplateFilePath = Join-Path -Path $CustomizationTemplateFolderPath -ChildPath "Customization.xml";
+
+        Get-PnPProvisioningTemplate `
+            -Handlers Navigation, SiteHeader, SiteFooter `
+            -Out $CustomizationTemplateFilePath;
+        $Time = Get-Date -Format "o";
+        $Record = [PSCustomObject]@{
+            Guid = "Customization"
+            Name = "Customization"
+            Path = $CustomizationTemplateFilePath
+            Time = $Time
+        };
+        $Records.Add($Record);
+
+        Write-Progress `
+            -Activity "Exporting customization" `
+            -PercentComplete 100;
     }
     
     end {
