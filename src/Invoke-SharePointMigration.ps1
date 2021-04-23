@@ -22,8 +22,8 @@ if (-not (Test-Path $OutputPath)) {
 }
 $TemplatePath = Resolve-Path $OutputPath;
 
-Write-Verbose "[Invoke-Migration] Start!";
+Write-Verbose "[Invoke-SharePointMigration] Start!";
 Export-SharePointTemplate -SourceUrl $SourceUrl -OutputPath $TemplatePath;
 Import-SharePointTemplate -DestinationUrl $DestinationUrl -InputPath $TemplatePath -ConvertToTeamSite $ConvertToTeamSite;
 Remove-Item -Recurse -Force $TemplatePath;
-Write-Verbose "[Invoke-Migration] Done!";
+Write-Verbose "[Invoke-SharePointMigration] Done!";
