@@ -16,7 +16,7 @@ param (
 Import-Module "$PSScriptRoot\Export-SharePointTemplate.psm1";
 Import-Module "$PSScriptRoot\Import-SharePointTemplate.psm1";
 
-$OutputPath = Resolve-Path ".\Result";
+$OutputPath = ".\Temp";
 if (-not (Test-Path $OutputPath)) {
     New-Item $OutputPath -ItemType Directory | Out-Null;   
 }
