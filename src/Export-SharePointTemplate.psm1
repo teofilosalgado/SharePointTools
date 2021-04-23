@@ -116,3 +116,5 @@ function Export-SharePointTemplate {
         Write-Verbose "[Export-SharePointTemplate] Done!";
     }
 }
+
+Export-ModuleMember -Function Export-SharePointTemplate;

@@ -120,3 +120,5 @@ function Invoke-ApplySharePointTemplate {
     } while ($Count -lt 3)
     throw Get-PnPException;
 }
+
+Export-ModuleMember -Function Import-SharePointTemplate;
