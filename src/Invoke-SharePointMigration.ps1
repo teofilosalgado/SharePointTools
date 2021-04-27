@@ -13,17 +13,18 @@ param (
     $ConvertToTeamSite = $false
 )
 
-Import-Module "$PSScriptRoot\Export-SharePointTemplate.psm1";
-Import-Module "$PSScriptRoot\Import-SharePointTemplate.psm1";
+Import-Module "$PSScriptRoot\Export-SharePointTemplate.psm1" -Force;
+Import-Module "$PSScriptRoot\Import-SharePointTemplate.psm1" -Force;
 
-$OutputPath = ".\Temp";
-if (-not (Test-Path $OutputPath)) {
-    New-Item $OutputPath -ItemType Directory | Out-Null;   
+$TemplatePath = "..\Temp";
+
+$ShouldConvertTeamSite = $false;
+if ($ConvertToTeamSite) {
+    $ShouldConvertTeamSite = $true;
 }
-$TemplatePath = Resolve-Path $OutputPath;
 
 Write-Verbose "[Invoke-SharePointMigration] Start!";
 Export-SharePointTemplate -SourceUrl $SourceUrl -OutputPath $TemplatePath;
-Import-SharePointTemplate -DestinationUrl $DestinationUrl -InputPath $TemplatePath -ConvertToTeamSite $ConvertToTeamSite;
+Import-SharePointTemplate -DestinationUrl $DestinationUrl -InputPath $TemplatePath -ConvertToTeamSite $ShouldConvertTeamSite;
 Remove-Item -Recurse -Force $TemplatePath;
 Write-Verbose "[Invoke-SharePointMigration] Done!";
