@@ -79,3 +79,4 @@ function Repair-WebParts {
     }
 }
 
+Export-ModuleMember -Function Repair-WebParts;
